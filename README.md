@@ -14,4 +14,3 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 * `slides` : presentación del taller
 
 #### Bibliografía:
-[Bibliografía clásica](https://drive.google.com/drive/folders/1nKK4FFTld8COBd3Pb7KicU_AguFwDNyu)
