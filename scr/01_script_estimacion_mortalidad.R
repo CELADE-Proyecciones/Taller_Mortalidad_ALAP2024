@@ -571,4 +571,3 @@ lt_output[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' )
 
 lt_Ec_twoP %>% setDT() %>% 
   .[Age==0, .(ex)] 
-
