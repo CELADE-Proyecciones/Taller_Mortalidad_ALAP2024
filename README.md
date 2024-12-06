@@ -14,7 +14,7 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 * `slides` : presentación del taller
 
 
-- [Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos](#primera_parte_la_estimación_de_la_mortalidad_en_américa_latina_fuentes_de_datos_y_métodos)
+- [Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos](#primera-parte-la-estimación-de-la-mortalidad-en-américa-latina-fuentes-de-datos-y-métodos)
   - [Segunda parte: modelos de parentesco en
     R](#segunda-parte-modelos-de-parentesco-en-r)
       - [1. Instalación](#1-instalación)
