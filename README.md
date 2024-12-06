@@ -15,18 +15,18 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 
 
 - [Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos](#primera-parte-la-estimación-de-la-mortalidad-en-américa-latina-fuentes-de-datos-y-métodos)
-  - [Segunda parte: modelos de parentesco en
-    R](#segunda-parte-modelos-de-parentesco-en-r)
-      - [1. Instalación](#1-instalación)
-      - [2. Cómo descargar datos de Naciones Unidas para este
-        taller](#2-cómo-descargar-datos-de-naciones-unidas-para-este-taller)
-      - [3. La función `kin()`](#3-la-función-kin)
-      - [4. Demostración: tamaño de redes familiares en Guatemala
-        (poblaciones
+- [Segunda parte: Estimación de tablas de mortalidad tablas de mortalidad con R a partir de varias fuentes](#Segunda-parte-Estimación-de-tablas-de-mortalidad-tablas-de-mortalidad-con-R-a-partir-de-varias-fuentes)
+  - [1. Instalación](#1-instalación)
+  - [2. Cómo descargar datos de Naciones Unidas para este taller](#2-cómo-descargar-datos-de-naciones-unidas-para-este-taller)
+  - [3. La función `kin()`](#3-la-función-kin)
+  - [4. Demostración: tamaño de redes familiares en Guatemala (poblaciones
         estables)](#4-demostración-tamaño-de-redes-familiares-en-guatemala-poblaciones-estables)
       - [5. Viñeta y extensiones](#5-viñeta-y-extensiones)
 
 # Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos
 
 Las diapositivas para la primera parte del taller están disponibles
-[aquí](diapositivas/alap_presentacion_parentesco.pdf).
+[aquí](slides/alap_presentacion_parentesco.pdf).
+
+
+# Segunda parte: Estimación de tablas de mortalidad tablas de mortalidad con R a partir de varias fuentes
