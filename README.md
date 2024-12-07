@@ -12,6 +12,7 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 * `dat` : datos de entrada
 * `scr` : código para replicar el análisis y las visualizaciones
 * `slides` : presentación del taller
+* `out` : resultados
 
 
 - [Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos](#primera-parte-la-estimación-de-la-mortalidad-en-américa-latina-fuentes-de-datos-y-métodos)

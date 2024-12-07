@@ -7,7 +7,7 @@
 #
 #         Fecha de creación:        26-11-2024
 #         Actualizado por:          @HCastanheira, @APDataSc
-#         Fecha de actualización:   02-12-2024
+#         Fecha de actualización:   06-12-2024
 #         Institución:              Centro Latinoamericano y Caribeño de Demografía
 #         Contacto:                 helena.cruz@cepal.org
 #
@@ -62,10 +62,12 @@ ecu_nac22_qx_iussp <- u5mr_trussell_adj(
   variant = "iussp"
 )
 
-write.table(ecu_nac22_qx_iussp, "clipboard", row.names = F, sep = "\t")
+write.csv(ecu_nac22_qx_iussp, file = "out/ecu_nac22_q0_5_iussp.csv")
 
 
 ## U5MR - Gráfica
+jpeg("out/UFMR_fig.jpg", width = 500, height = 350)
+
 with(ecu_nac22_qx_iussp,
      plot(year, q5, type = "b", pch = 19,
           ylim = c(0.02, .034),
@@ -75,9 +77,10 @@ with(ecu_nac22_qx_iussp,
 
 with(ecu_nac22_qx_iussp, text(year, q5, agegrp, cex=0.65, pos=3,col="blue"))
 
-
 legend("bottomleft", legend=c("IUSSP"),
        col = c("purple"), lty = 1:1, cex=0.8)
+
+dev.off()
 
 
 # Tabla de vida a partir de la mortalidad en la niñez
@@ -91,6 +94,7 @@ lt_Ec_oneP <- lt_model_cdun_match_single(type = "CD_West",
                                  value = q0_5,
                                  OAnew = 100)
 
+lt_OneP_fig <-  
 lt_Ec_oneP %>% # Gráfica
   ggplot() +
   geom_point(aes(Age, nqx)) +
@@ -98,9 +102,13 @@ lt_Ec_oneP %>% # Gráfica
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
                      limits = c(0,100)) +
-  ggtitle("Probabilidad de muerte por edad simple a partir de \nla mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
+  ggtitle("Probabilidad de muerte por edad simple a partir de la mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
   theme_bw()
 
+ggsave( plot = lt_OneP_fig,
+        filename = 'out/lt_OneP_fig.jpg',
+        height = 5,
+        width  = 10 )
 
 # Esperanza de vida al nacer para las mujeres
 lt_Ec_oneP %>% setDT() %>% 
@@ -143,11 +151,18 @@ sum(mort_hog$deaths)
 sum(adj_mort_hog$deaths)
 
 # Gráfica de las defunciones de los hogares 2022
+deaths_hog_x1_fig <-
 adj_mort_hog %>%
   ggplot( ) +
   geom_line( aes( x = age, y = deaths, color = factor( sex ), group = factor( sex ) ), 
              size = 1 ) +
   theme_bw()
+
+ggsave( plot = deaths_hog_x1_fig,
+        filename = 'out/deaths_hog_x1_fig.jpg',
+        height = 5,
+        width  = 10 )
+
 
 # Defunciones por edad quinquenal
 deaths_hog <- adj_mort_hog[ , `:=`(age5 = ifelse(age==0, 0,
@@ -157,12 +172,17 @@ deaths_hog <- adj_mort_hog[ , `:=`(age5 = ifelse(age==0, 0,
                 .[ , .(deaths = sum(deaths)), .(sex, age5)]  
 
 # Gráfica de defunciones por edad quinquenal
-deaths_hog %>%
+deaths_hog_x5_fig <-  
+  deaths_hog %>%
   ggplot( ) +
   geom_line( aes( x = age5, y = deaths, color = factor( sex ), group = factor( sex ) ), 
              size = 1 ) +
   theme_bw()
 
+ggsave( plot = deaths_hog_x5_fig,
+        filename = 'out/deaths_hog_x5_fig.jpg',
+        height = 5,
+        width  = 10 )
 
 
 # Población de los dos últimos censos 2010 y 2022
@@ -210,6 +230,19 @@ for( s in c("m", "f") ){
 pop_interp_1022[ , .(pop=sum(pop_exp)), .(sex)]
 
 
+# Completitud de los datos de defunciones - wpp 2022
+
+corr_complt <- rbind(
+  corr_complt <- 
+    fread( 'dat/ECU_COMPLETITUD_DEFUNCIONES_WPP2022.csv' ),
+  
+  corr_complt[ date_ref==2021.5, .(date_ref = 2022.5, sex, vr_comp, vr_comp_new)]
+)
+
+corr_complt[ , vr_comp := vr_comp_new ]
+
+
+
 # Tasas de mortalidad
 
 # Preparacion input tabla mortalidad - muertes de hogares + población al 30 de abril 2022
@@ -224,6 +257,10 @@ lt_input_2022h <-
   merge(
     q1_q5[ , .( date_ref, sex, q1 = q0_1, q5 = q0_5 ) ],
     by = c( 'date_ref', 'sex' )
+  ) %>%
+  merge(
+    corr_complt,
+    by = c( 'date_ref', 'sex' )
   ) %>% 
   setorder( sex, age5 )
 
@@ -234,7 +271,7 @@ single_est <- TRUE # TRUE para edad simple o FALSE para grupos quinquenales
 
 
 # Calcula tasas de mortalidad
-lt_input_2022h[ , mx := deaths / pop_exp  ]
+lt_input_2022h[ , mx := (deaths / pop_exp) / vr_comp_new]
 
 
 # Preparacion input tabla mortalidad nacional - eevv + censales 1974, 1982
@@ -302,14 +339,18 @@ for( s in c( 'm', 'f' ) ){
 }
 
 
+qx_hog_fig <-
 lt_output_2022h[ age < 100 ]  %>%
   ggplot( ) +
-  geom_line( aes( x = age, y = qx, color = factor( year ), group = factor(year ) ), size = 1 ) +
+  geom_line( aes( x = age, y = qx, color = factor( sex ), group = factor(sex ) ), size = 1 ) +
   scale_y_log10()+
-  facet_wrap( ~ sex, ) +
-  labs(color='año') +   
-  # theme_bw()
-  theme_classic()
+  labs(color='sex') +   
+  theme_bw()
+
+ggsave( plot = qx_hog_fig,
+        filename = 'out/qx_hog_fig.jpg',
+        height = 5,
+        width  = 10 )
 
 lt_output_2022h[ age == 0 ] %>% dcast( year ~ sex, value.var = 'ex' )
 
@@ -417,7 +458,7 @@ lt_input[ , mx := deaths / pop  ]
 lt_input[ ,
             mx_adj_hp := MortalityLaw(x = age,
                             mx = mx,
-                            law = "HP", fit.this.x = 0:95,
+                            law = "HP", fit.this.x = 0:100,
                             opt.method = "LF2")$fitted.values,
   .( year, sex ) ]
 
@@ -425,6 +466,8 @@ lt_input[ ,
 lt_input[ , mx_adj2 := mx_adj_hp / vr_comp]
 
 "Gráfica"
+
+mx_eevv_censo_fig <-
 lt_input %>%
   ggplot() + 
   geom_point(aes(x = age, y = mx, color = "mx"), size = 1) + 
@@ -440,6 +483,13 @@ lt_input %>%
     breaks = c("mx", "mx_adj_hp", "mx_adj2"),
     labels = c("mx", "mx ajustada HP", "mx ajuste final")
   ) 
+
+
+ggsave( plot = mx_eevv_censo_fig,
+        filename = 'out/mx_eevv_censo_fig.jpg',
+        height = 5,
+        width  = 10 )
+
 
 
 "Tablas de vida"
@@ -519,6 +569,7 @@ lt_Ec_twoP <- lt_model_cdun_combin_single(type = "CD_West",
                                                    value_adult = q15_45, 
                                           OAnew = 100)
 
+lt_TwoP_fig <-
 lt_Ec_twoP %>% # Gráfica
   ggplot() +
   geom_point(aes(Age, nqx)) +
@@ -526,8 +577,13 @@ lt_Ec_twoP %>% # Gráfica
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
                      limits = c(0,100)) +
-  ggtitle("Probabilidad de muerte por edad simple a partir de \nla mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
+  ggtitle("Probabilidad de muerte por edad simple a partir de la mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
   theme_bw()
+
+ggsave( plot = lt_TwoP_fig,
+        filename = 'out/lt_TwoP_fig.jpg',
+        height = 5,
+        width  = 10 )
 
 
 lt_Ec_twoP %>% setDT() %>% 
@@ -536,38 +592,55 @@ lt_Ec_twoP %>% setDT() %>%
 "---------------------------------FIN de sección---------------------------------"
 
 
-# 5) Análisis comparativos
+# 5) Análisis comparativo ----
+
+lt_Ec_2022_WPP24 <- fread("dat/lt_ecu_2022_WPP24.csv")
 
 lt <- rbind(
   lt_output_2022h[ sex=="f", .(source="Hogares", age, qx)],
   lt_output[ sex=="f", .(source="EEVV y Censo", age, qx)], 
   lt_Ec_oneP[ , .(source="U5MR Censo", age= Age, qx=nqx)],
-  lt_Ec_twoP[ , .(source="U5MR Censo y 45q15", age= Age, qx=nqx)]
-)
+  lt_Ec_twoP[ , .(source="U5MR Censo y 45q15", age= Age, qx=nqx)],
+  lt_Ec_2022_WPP24[Sex=="Female", .(source="WPP 2024", age= AgeGrpStart, qx)]
+  )
 
-
+qx_Compara_fig <-
 lt %>% 
   ggplot() +
-  geom_point(data = . %>% filter(source == "U5MR Censo"), aes(age, qx, col = source)) +
+  geom_line(data = . %>% filter(source == "U5MR Censo"), aes(age, qx, col = source)) +
   geom_point(data = . %>% filter(source == "EEVV y Censo"), aes(age, qx, col = source)) +
-  geom_point(data = . %>% filter(source == "U5MR Censo y 45q15"), aes(age, qx, col = source)) +
-  geom_point(data = . %>% filter(source == "Hogares"), aes(age, qx, col = source)) +
+  geom_line(data = . %>% filter(source == "U5MR Censo y 45q15"), aes(age, qx, col = source)) +
+  geom_line(data = . %>% filter(source == "Hogares"), aes(age, qx, col = source)) +
+  geom_line(data = . %>% filter(source == "WPP 2024"), aes(age, qx, col = source)) +
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
-                     limits = c(0,100)) +
-  ggtitle("Probabilidad de muerte por edad simple a partir de \nla diversas fuentes. Ecuador 2022") +
+                     limits = c(0,99)) +
+  ggtitle("Probabilidad de muerte por edad simple a partir de las diversas fuentes. \nEcuador 2022") +
   theme_bw()
 
+ggsave( plot = qx_Compara_fig,
+        filename = 'out/qx_Compara_fig.jpg',
+        height = 5,
+        width  = 10 )
 
 
-# Comparación entre distintas fuentes
+# Comparación de la e0 de mujeres entre distintas fuentes
 
-lt_Ec_oneP %>% setDT() %>% 
-  .[Age==0, .(ex)] 
-
-lt_output_2022h[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' )
-
-lt_output[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' )
-
-lt_Ec_twoP %>% setDT() %>% 
-  .[Age==0, .(ex)] 
+data.table(
+Fuente=c("e0 con U5MR", "e0 hogares", "e0 censo y EEVV", "e0 2 parámetros", "e0 WPP 2024"),
+e0_2022 = c(
+lt_Ec_oneP %>% setDT() %>% .[Age==0, .(ex)] %>% pull(),
+lt_output_2022h[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' ) %>% pull(),
+lt_output[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' ) %>% pull(),
+lt_Ec_twoP %>% setDT() %>% .[Age==0, .(ex)] %>% pull(),
+lt_Ec_2022_WPP24[ AgeGrpStart == 0 & Sex=="Female" ] %>% dcast( Time ~ Sex, value.var = 'ex' ) %>% pull()
+),
+U5MR = c(1-lt_Ec_oneP[Age==5, .(lx)] %>% pull()/lt_Ec_oneP[Age==0, .(lx)] %>% pull(),
+         1-lt_output_2022h[age==5 & sex=="f", .(lx)] %>% pull()/lt_output_2022h[age==0 & sex=="f", .(lx)] %>% pull(),
+         1-lt_output[age==5 & sex=="f", .(lx)] %>% pull()/lt_output[age==0 & sex=="f", .(lx)] %>% pull(),
+         1-lt_Ec_twoP[Age==5, .(lx)] %>% pull()/lt_Ec_twoP[Age==0, .(lx)] %>% pull(),
+         1-lt_Ec_2022_WPP24[AgeGrpStart==5 & Sex=="Female", .(lx)] %>% 
+           pull()/lt_Ec_2022_WPP24[AgeGrpStart==0 & Sex=="Female", .(lx)] %>% 
+           pull()
+         )
+        )
