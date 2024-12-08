@@ -7,14 +7,14 @@
 #
 #         Fecha de creación:        26-11-2024
 #         Actualizado por:          @HCastanheira, @APDataSc
-#         Fecha de actualización:   06-12-2024
+#         Fecha de actualización:   08-12-2024
 #         Institución:              Centro Latinoamericano y Caribeño de Demografía
 #         Contacto:                 helena.cruz@cepal.org
 #
 #**************************************************************************************#
 #**************************************************************************************#
 
-# 0) Preámbulo 
+# 0) Preámbulo ----
 
 rm(list = ls())
 
@@ -28,29 +28,35 @@ library(MortalityLaws)
 library(dplyr)
 
 options(scipen = 999)
+options(warn=-1)
 
 source("scr/00_mort_functions.R")
 
 
-# A continuación se estiman las tablas de mortalidad para el 2022 a partir de varias fuentes 
-# de información.  Una de las principales fuentes es el Censo Ecuador 2022 que tiene como 
-# fecha de referencia el 30-11-2022.  Para más detalles: https://www.censoecuador.gob.ec/  
+"--------------------------------------------------------------------------------"
+
+# A continuación se estiman las tablas de mortalidad para el 2022 a partir de 
+# varias fuentes de información.  Una de las principales fuentes es el Censo 
+# Ecuador 2022 que tiene como fecha de referencia el 30-11-2022.  
+# Para más detalles: https://www.censoecuador.gob.ec/  
 
 
 # 1) TM a partir de la mortalidad en la niñez de censos (U5MR) y tablas modelo ----
 
-# Datos Censo Ecuador - 2022
+## 1.1 Carga de datos del Censo Ecuador - 2022 ----
 
-cmr_data <- data.frame(
+(cmr_data <- data.table(
   agegrp = c(15, 20, 25, 30, 35, 40, 45), 
   women = c(725594, 728503, 671987, 623044, 591298, 558825, 476056),
   child_born = c(79100, 389089, 762811, 1069998, 1293875, 1393444, 1287071),
   child_dead = c(1757, 8282, 16627, 25003, 34509, 43514, 49648)
-)
+))
 
 
-"q5 2022 - iussp"
-ecu_nac22_qx_iussp <- u5mr_trussell_adj(
+## 1.2 Estimación de q0_5 y q0_1 del censo 2022 - versión iussp ----
+## https://demographicestimation.iussp.org/content/indirect-estimation-child-mortality
+
+(ecu_nac22_qx_iussp <- u5mr_trussell_adj(
   cmr_data,
   women = "women",
   child_born = "child_born",
@@ -59,58 +65,59 @@ ecu_nac22_qx_iussp <- u5mr_trussell_adj(
   model = "west",
   svy_year = 2022+10/12+30/365,
   sex = "both",
-  variant = "iussp"
-)
+  variant = "iussp",
+  e_0 = 70
+))
 
-write.csv(ecu_nac22_qx_iussp, file = "out/ecu_nac22_q0_5_iussp.csv")
+write.csv(ecu_nac22_qx_iussp, file = "out/ecu_nac22_q0_5_iussp.csv") # exportando a la carpeta "out"
 
 
-## U5MR - Gráfica
+### U5MR - Gráfica
 jpeg("out/UFMR_fig.jpg", width = 500, height = 350)
 
 with(ecu_nac22_qx_iussp,
      plot(year, q5, type = "b", pch = 19,
           ylim = c(0.02, .034),
-          col = "purple", xlab = "Reference date", ylab = "u5MR",
-          main = paste0("Under-five mortality, q(5) in Ecuador, estimated\n",
-                        "using model West and the Trussell version of the Brass method")))
+          col = "purple", xlab = "Fecha de referencia", ylab = "U5MR",
+          main = paste0("Under-five mortality en Ecuador 2022 estimada usando\n",
+                        "West CD y la versión de Trussell del método de Brass")))
 
 with(ecu_nac22_qx_iussp, text(year, q5, agegrp, cex=0.65, pos=3,col="blue"))
 
-legend("bottomleft", legend=c("IUSSP"),
+legend("bottomleft", legend=c("U5MR Censo 2022"),
        col = c("purple"), lty = 1:1, cex=0.8)
 
 dev.off()
 
 
-# Tabla de vida a partir de la mortalidad en la niñez
-q0_5 <- ecu_nac22_qx_iussp$q5[2]*0.5 + ecu_nac22_qx_iussp$q5[3]*0.5 
-q01 <- ecu_nac22_qx_iussp$q1[2]*0.5 + ecu_nac22_qx_iussp$q1[3]*0.5 
-year <- ecu_nac22_qx_iussp$year[2]*0.5 + ecu_nac22_qx_iussp$year[3]*0.5
+## 1.3 Tabla de vida a partir de la mortalidad en la niñez ----
+q05 <- ecu_nac22_qx_iussp$q5[2]*0.5 + ecu_nac22_qx_iussp$q5[3]*0.5 #promedio U5MR de 20-24 y 25-29  
 
+
+### Estimación de tabla de vida de mujeres con un sólo parámetro U5MR y CD_West 
 lt_Ec_oneP <- lt_model_cdun_match_single(type = "CD_West", 
                                  Sex = "f", 
                                  indicator = "5q0", 
-                                 value = q0_5,
+                                 value = q05,
                                  OAnew = 100)
-
-lt_OneP_fig <-  
-lt_Ec_oneP %>% # Gráfica
+### Gráfica de q_x
+(lt_OneP_fig <-  
+lt_Ec_oneP %>% 
   ggplot() +
   geom_point(aes(Age, nqx)) +
   geom_line(aes(Age, nqx)) +
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
-                     limits = c(0,100)) +
-  ggtitle("Probabilidad de muerte por edad simple a partir de la mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
-  theme_bw()
+                     limits = c(0,99)) +
+  ggtitle("Probabilidad de muerte por edad simple a partir de la mortalidad en la \nniñez (5q0) del censo y tabla modelo CD familia West. Ecuador 2022") +
+  theme_bw())
 
 ggsave( plot = lt_OneP_fig,
         filename = 'out/lt_OneP_fig.jpg',
         height = 5,
         width  = 10 )
 
-# Esperanza de vida al nacer para las mujeres
+### Esperanza de vida al nacer para las mujeres
 lt_Ec_oneP %>% setDT() %>% 
   .[Age==0, .(ex)] 
 
@@ -119,22 +126,27 @@ lt_Ec_oneP %>% setDT() %>%
 
 # 2) TM a través de las defunciones del hogar de censos ----
 
+## 2.1 Carga de los datos del módulo de mortalidad del Censo Ecuador 2022 ----
 mort_hog <- fread("dat/CPV_Mortalidad_2022_Nacional.csv")
+names(mort_hog) <- tolower(names(mort_hog)) # nombres de variables en minúscula
 
-names(mort_hog) <- tolower(names(mort_hog))
 
-#Tabulado de edad y sexo
-mort_hog <- mort_hog[  (m0202==2021 & m0201>=11) | (m0202==2022 & m0201<=10), 
+## 2.2 Preparación del numerador (defunciones) del módulo de mortalidad de hogares ----   
+
+### Tabla de defunciones por edad y sexo
+### Nota: se toman las defunciones ocurridas un año antes del levantamiento,
+### es decir, desde noviembre de 2021 a ocubre de 2022.
+(mort_hog <- mort_hog[  (m0202==2021 & m0201>=11) | (m0202==2022 & m0201<=10), 
                   .(deaths=.N), .(m0202, m0201, m04, m03)] %>%
                           .[ , 
                               `:=`( age = ifelse(m03>=100 & m03<999, 100, m03),
                                     m0201 = ifelse(m0201==99, 6, m0201) 
                                     ) ] %>% 
                           .[ , .(deaths = sum(deaths)), .(sex = m04, age)] %>% 
-                              setorder(sex, age)
+                              setorder(sex, age))
 
-# Prorrateo de edades no declaradas
-adj_mort_hog <- 
+### Prorrateo de edades no declaradas (999)
+(adj_mort_hog <- 
   mort_hog[ age!=999, 
            .( sex, age, deaths ) ] %>%
   .[ , p_deaths := deaths / sum( deaths ), .( sex ) ] %>%
@@ -144,19 +156,20 @@ adj_mort_hog <-
     by = c( 'sex' )
   ) %>%
   .[ , deaths_adj := deaths + p_deaths * na_deaths ] %>%
-  .[ , .( sex, age, deaths = deaths_adj ) ]
+  .[ , .( sex, age, deaths = deaths_adj ) ])
 
-# Comprobación
+#### Comprobación
 sum(mort_hog$deaths)
 sum(adj_mort_hog$deaths)
 
-# Gráfica de las defunciones de los hogares 2022
-deaths_hog_x1_fig <-
+
+### Gráfica de las defunciones de los hogares 2022
+(deaths_hog_x1_fig <-
 adj_mort_hog %>%
   ggplot( ) +
   geom_line( aes( x = age, y = deaths, color = factor( sex ), group = factor( sex ) ), 
              size = 1 ) +
-  theme_bw()
+  theme_bw())
 
 ggsave( plot = deaths_hog_x1_fig,
         filename = 'out/deaths_hog_x1_fig.jpg',
@@ -164,20 +177,21 @@ ggsave( plot = deaths_hog_x1_fig,
         width  = 10 )
 
 
-# Defunciones por edad quinquenal
-deaths_hog <- adj_mort_hog[ , `:=`(age5 = ifelse(age==0, 0,
+### Dado el problema de mala declaración de edad de las defunciones se decide 
+### trabajar por edad quinquenal
+(deaths_hog <- adj_mort_hog[ , `:=`(age5 = ifelse(age==0, 0,
                                             ifelse(age>=1 & age<=4, 1, 
                                                    age - age %% 5)), 
                                     sex = ifelse(sex==1, "m", "f"))] %>% 
-                .[ , .(deaths = sum(deaths)), .(sex, age5)]  
+                .[ , .(deaths = sum(deaths)), .(sex, age5)])  
 
-# Gráfica de defunciones por edad quinquenal
-deaths_hog_x5_fig <-  
+### Gráfica de defunciones por edad quinquenal
+(deaths_hog_x5_fig <-  
   deaths_hog %>%
   ggplot( ) +
   geom_line( aes( x = age5, y = deaths, color = factor( sex ), group = factor( sex ) ), 
              size = 1 ) +
-  theme_bw()
+  theme_bw())
 
 ggsave( plot = deaths_hog_x5_fig,
         filename = 'out/deaths_hog_x5_fig.jpg',
@@ -185,29 +199,30 @@ ggsave( plot = deaths_hog_x5_fig,
         width  = 10 )
 
 
-# Población de los dos últimos censos 2010 y 2022
+## 2.3 Preparación del denominador, población a mitad del período de las defunciones----   
+## es decir, 30 de abril de 2022
 
-pop_dt <- 
+### Carga de la población de los dos últimos censos 2010 y 2022
+(pop_dt <- 
   fread( 'dat/ecu_pop_census1022.csv' ) %>%
   .[ , .(year, date_ref, sex, 
          age= ifelse(age==0, 0, ifelse(age %in% 1:4, 1, age - age %% 5)), 
          pop)] %>%
-  setorder( date_ref, sex, age )   
+  setorder( date_ref, sex, age ))   
 
 
-# Ajusta poblacion > 100 
-pop_dt <- 
+### Se acota la población a 100+ años y se agrega por edad quinquenal  
+(pop_dt <- 
   pop_dt %>% copy %>%
   .[ , age := ifelse( age > 100, 100, age ) ] %>%
   .[ , 
      .( pop = sum( pop ) ),
-     .( year, date_ref, sex, age ) ]
+     .( year, date_ref, sex, age ) ])
 
 pop_dt[ , max(age),year] # 100+ - ok
 
 
-
-## Población al 30 de abril de 2022
+### Se traslada la población al 30 de abril de 2022
 pop_interp_1022 <- data.table()
 for( s in c("m", "f") ){
 
@@ -230,7 +245,9 @@ for( s in c("m", "f") ){
 pop_interp_1022[ , .(pop=sum(pop_exp)), .(sex)]
 
 
-# Completitud de los datos de defunciones - wpp 2022
+## 2.4 Preparacion input tabla de mortalidad: muertes hogares + IMR/U5MR + completitud + población----
+
+### Completitud de los datos de defunciones - WPP 2022
 
 corr_complt <- rbind(
   corr_complt <- 
@@ -238,18 +255,14 @@ corr_complt <- rbind(
   
   corr_complt[ date_ref==2021.5, .(date_ref = 2022.5, sex, vr_comp, vr_comp_new)]
 )
-
 corr_complt[ , vr_comp := vr_comp_new ]
 
 
-
-# Tasas de mortalidad
-
-# Preparacion input tabla mortalidad - muertes de hogares + población al 30 de abril 2022
+### Consolidación input tabla mortalidad: muertes hogares + + población + IMR/U5MR + completitud  
 
 q1_q5 <- fread("dat/ecu_q1_q5_1990_2050.csv")
 
-lt_input_2022h <- 
+(lt_input_2022h <- 
   merge(
     deaths_hog,
     pop_interp_1022,
@@ -262,22 +275,17 @@ lt_input_2022h <-
     corr_complt,
     by = c( 'date_ref', 'sex' )
   ) %>% 
-  setorder( sex, age5 )
+  setorder( sex, age5 ))
 
 
-### Construcion tabla de mortalidad edad simple #---------------------------*
-
+## 2.5 Construción tabla de mortalidad x edad simple----
 single_est <- TRUE # TRUE para edad simple o FALSE para grupos quinquenales
 
-
-# Calcula tasas de mortalidad
+### Cálculo tasas de mortalidad corregidas por completitud
 lt_input_2022h[ , mx := (deaths / pop_exp) / vr_comp_new]
 
-
-# Preparacion input tabla mortalidad nacional - eevv + censales 1974, 1982
-
+### Tabla mortalidad nacional por edad simple para ambos sexos
 lt_output_2022h <- data.table()
-#tm_mx <- data.table()
 for( s in c( 'm', 'f' ) ){
   for( y in unique( lt_input_2022h$date_ref ) ){
     
@@ -338,14 +346,14 @@ for( s in c( 'm', 'f' ) ){
   
 }
 
-
-qx_hog_fig <-
+### Gráfica de qx
+(qx_hog_fig <-
 lt_output_2022h[ age < 100 ]  %>%
   ggplot( ) +
   geom_line( aes( x = age, y = qx, color = factor( sex ), group = factor(sex ) ), size = 1 ) +
   scale_y_log10()+
   labs(color='sex') +   
-  theme_bw()
+  theme_bw())
 
 ggsave( plot = qx_hog_fig,
         filename = 'out/qx_hog_fig.jpg',
@@ -354,66 +362,52 @@ ggsave( plot = qx_hog_fig,
 
 lt_output_2022h[ age == 0 ] %>% dcast( year ~ sex, value.var = 'ex' )
 
-
-
 "---------------------------------FIN de sección---------------------------------"
 
 
 # 3) TM a partir de los registros vitales y censos ----
 
-## 3.1 defunciones para el ano censal
-eevv_dt <- 
+### 3.1 Carga de las defunciones para el ano censal ----
+(eevv_dt <- 
   fread( 'dat/eevv_dt.csv' ) %>%
   setorder( date_ref, sex, age ) %>%
   .[ year %in% c( 2022 ) ] %>%
   .[ , age := ifelse( age > 100, 100, age ) ] %>%
   .[ , 
      .( deaths = sum( deaths ) ),
-     .( year, date_ref, sex, age ) ]
+     .( year, date_ref, sex, age ) ])
 
-# edad maxima (grupo abierto) de los datos de defunciones 95+ - ok
-eevv_dt[ , max( age, na.rm = TRUE ), year ]
+### 3.2 Preparación de los datos de defunciones para el ano censal ----
 
-# distribucion de los missings - realizado por fuera de este script
-adj_eevv_dt <- 
-  eevv_dt
+### Para cálculo del promedio para el año de referencia, si se usara más de un año
+eevv_dt[ , year_new := ifelse( year %in% 2022, 2022, year ) ]
 
-# calculo del promedio para el ano de referencia si se usara más de un año
-adj_eevv_dt[ , year_new := ifelse( year %in% 2022, 2022, year ) ]
-
-# datos preparados de defunciones
-mort_dt <- 
-  adj_eevv_dt[ , 
-               .( deaths = mean( deaths ) ),
-               .( year = year_new,
-                  sex, age ) ] %>%
-  .[ , .( year,
-          date_ref = year + 0.5,
-          sex, age, deaths ) ]
+(mort_dt <- 
+  eevv_dt[ , 
+            .( deaths = mean( deaths ) ),
+            .( year = year_new,
+                    sex, age ) ] %>%
+         .[ , .( year,
+            date_ref = year + 0.5,
+            sex, age, deaths ) ])
 
 mort_dt[ , max( age ), year]
 mort_dt[ ,.N, year ]
 
 
-# 3.2 poblacion censada (en el medio del ano censal)
+### 3.3 Poblacion a mitad de año del censo 2022 ----
 pop_dt <- 
   fread( 'dat/ecu_pob_interp.csv' ) %>%
   .[ , .(date_ref = year + 0.5, sex, age, year, pop = pob)] %>% 
   setorder( date_ref, sex, age )  %>%
   .[ year %in% c( 2022 ) ] 
 
-
-pop_dt <- pop_dt[ , age := ifelse( age > 100, 100, age ) ] %>%
-  .[ , 
-     .( pop = sum( pop ) ),
-     .( year, date_ref, sex, age ) ] 
-
-# edad maxima (grupo abierto) de los datos de poblacion - 95+ - ok
+#### Edad maxima (grupo abierto) de los datos de poblacion - 100+ - ok
 pop_dt[ , max( age, na.rm = TRUE ), year ]
 pop_dt[ ,.N, year ]
 
-# 3.3 completitud de los datos de defunciones - wpp 2022
 
+### 3.4 Completitud de los datos de defunciones - wpp 2022 ----
 corr_complt <- rbind(
   corr_complt <- 
     fread( 'dat/ECU_COMPLETITUD_DEFUNCIONES_WPP2022.csv' ),
@@ -424,11 +418,11 @@ corr_complt <- rbind(
 corr_complt[ , vr_comp := vr_comp_new ]
 
 
-# Upload from file "ECU_Mort_Ninez_Infantil_Rev2024", sheet "Estimación U5MR e IMR" 
+### 3.5 Carga de la Mortalidad en la Ninez e Infantil de la Rev. 2024 del INEC ---- 
 q1_q5 <- fread("dat/ecu_q1_q5_1990_2050.csv")
 
 
-# 3.4 Preparacion input tabla mortalidad - eevv + censales 1990, 2001, 2010, 2019
+### 3.6 Preparacion input tabla mortalidad: muertes eevv + población + completitud + IMR/U5MR ----
 lt_input <- 
   merge(
     mort_dt,
@@ -446,15 +440,12 @@ lt_input <-
   setorder( date_ref, sex, age )
 
 
-# 3.5 Construción tabla de mortalidad edad simple #---------------------------*
+## 3.6 Cálculo y ajuste de las tasas de mortalidad----
 
-single_est <- TRUE # TRUE para edad simples o FALSE para grupos quinquenales
-
-# calcula tasas de mortalidad
+### Cálculo de las tasas de mortalidad
 lt_input[ , mx := deaths / pop  ]
 
-
-# suavizacion con HP
+### Suavización con Helligman & Pollard
 lt_input[ ,
             mx_adj_hp := MortalityLaw(x = age,
                             mx = mx,
@@ -462,12 +453,13 @@ lt_input[ ,
                             opt.method = "LF2")$fitted.values,
   .( year, sex ) ]
 
-# "Ajuste por completitud"
+### "Ajuste por completitud"
 lt_input[ , mx_adj2 := mx_adj_hp / vr_comp]
 
-"Gráfica"
 
-mx_eevv_censo_fig <-
+### Gráfica de las m_x originales y ajustadas
+
+(mx_eevv_censo_fig <-
 lt_input %>%
   ggplot() + 
   geom_point(aes(x = age, y = mx, color = "mx"), size = 1) + 
@@ -482,7 +474,7 @@ lt_input %>%
     name = "Tasas Ajustadas",
     breaks = c("mx", "mx_adj_hp", "mx_adj2"),
     labels = c("mx", "mx ajustada HP", "mx ajuste final")
-  ) 
+  )) 
 
 
 ggsave( plot = mx_eevv_censo_fig,
@@ -491,8 +483,9 @@ ggsave( plot = mx_eevv_censo_fig,
         width  = 10 )
 
 
+## 3.7 Construción tabla de mortalidad x edad simple----
+single_est <- TRUE # TRUE para edad simples o FALSE para grupos quinquenales
 
-"Tablas de vida"
 lt_output <- data.table()
 for( s in c( 'm', 'f' ) ){
   for( y in c( 2022.5 ) ){
@@ -547,45 +540,60 @@ for( s in c( 'm', 'f' ) ){
   
 }
 
+### Gráfica de qx
+(qx_eevv_fig <-
+    lt_output[ age < 100 ]  %>%
+    ggplot( ) +
+    geom_line( aes( x = age, y = qx, color = factor( sex ), group = factor(sex ) ), size = 1 ) +
+    scale_y_log10()+
+    labs(color='sex') +   
+    theme_bw())
+
+ggsave( plot = qx_eevv_fig,
+        filename = 'out/qx_eevv_fig.jpg',
+        height = 5,
+        width  = 10 )
+
 
 lt_output[ age == 0 ] %>% dcast( year ~ sex, value.var = 'ex' )
 
 
 
-
 "---------------------------------FIN de sección---------------------------------"
 
-# 4) TM a través de dos parámetros: mortalidad en la niñez y adulta (45q15) ----
+# 4) TM a través de dos parámetros: mortalidad en la niñez (U5MR) y adulta (45q15) ----
 
+## 4.1 Cálculo de q15_45 a partir de las EEVV y Censo (3) ----
+(q15_45 <- 1 - lt_output[age==60 & sex=="f", .(lx)] %>% pull()/
+              lt_output[age==15 & sex=="f", .(lx)] %>% pull())
 
-q15_45 <- 1-lt_output[age==60 & sex=="f", .(lx)] %>% pull()/lt_output[age==15 & sex=="f", .(lx)] %>% pull()
-
-
+## 4.2 Tabla de vida a partir de la mortalidad en la niñez y adulta----
 lt_Ec_twoP <- lt_model_cdun_combin_single(type = "CD_West", 
                                                    Sex = "f", 
-                                                   q1 = q01, 
-                                                   q5 = NA, 
+                                                   q1 = NA, 
+                                                   q5 = q05, 
                                                    indicator_adult = "45q15", 
                                                    value_adult = q15_45, 
                                           OAnew = 100)
 
-lt_TwoP_fig <-
-lt_Ec_twoP %>% # Gráfica
+### Gráfica de q_x
+(lt_TwoP_fig <-
+lt_Ec_twoP %>% 
   ggplot() +
   geom_point(aes(Age, nqx)) +
   geom_line(aes(Age, nqx)) +
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
-                     limits = c(0,100)) +
+                     limits = c(0,99)) +
   ggtitle("Probabilidad de muerte por edad simple a partir de la mortalidad en la niñez (5q0) de los censos \ny tablas modelo CD familia West. Ecuador 2022") +
-  theme_bw()
+  theme_bw())
 
 ggsave( plot = lt_TwoP_fig,
         filename = 'out/lt_TwoP_fig.jpg',
         height = 5,
         width  = 10 )
 
-
+### Esperanza de vida al nacer para las mujeres
 lt_Ec_twoP %>% setDT() %>% 
   .[Age==0, .(ex)] 
 
@@ -596,6 +604,7 @@ lt_Ec_twoP %>% setDT() %>%
 
 lt_Ec_2022_WPP24 <- fread("dat/lt_ecu_2022_WPP24.csv")
 
+## 5.1 Consolidación de estimaciones de distintas fuentes ----
 lt <- rbind(
   lt_output_2022h[ sex=="f", .(source="Hogares", age, qx)],
   lt_output[ sex=="f", .(source="EEVV y Censo", age, qx)], 
@@ -604,7 +613,8 @@ lt <- rbind(
   lt_Ec_2022_WPP24[Sex=="Female", .(source="WPP 2024", age= AgeGrpStart, qx)]
   )
 
-qx_Compara_fig <-
+### Gráfica de q_x
+(qx_Compara_fig <-
 lt %>% 
   ggplot() +
   geom_line(data = . %>% filter(source == "U5MR Censo"), aes(age, qx, col = source)) +
@@ -615,8 +625,8 @@ lt %>%
   scale_y_log10()+
   scale_x_continuous(breaks = seq(0,100,10), labels =  seq(0,100,10), 
                      limits = c(0,99)) +
-  ggtitle("Probabilidad de muerte por edad simple a partir de las diversas fuentes. \nEcuador 2022") +
-  theme_bw()
+  ggtitle("Probabilidad de muerte de las mujeres por edad simple \na partir de las diversas fuentes. Ecuador 2022") +
+  theme_bw())
 
 ggsave( plot = qx_Compara_fig,
         filename = 'out/qx_Compara_fig.jpg',
@@ -624,23 +634,34 @@ ggsave( plot = qx_Compara_fig,
         width  = 10 )
 
 
-# Comparación de la e0 de mujeres entre distintas fuentes
+## 5.2 Comparación de la e0 y U5MR de mujeres entre distintas fuentes ----
 
-data.table(
-Fuente=c("e0 con U5MR", "e0 hogares", "e0 censo y EEVV", "e0 2 parámetros", "e0 WPP 2024"),
-e0_2022 = c(
+(resumen <- data.table(
+Fuente=c("e0 con 1 parámetro (U5MR)", "e0 2 parámetros (U5MR y 45q15)", 
+         "e0 hogares", "e0 censo y EEVV", "e0 WPP 2024"),
+e0_2022 = round(c(
 lt_Ec_oneP %>% setDT() %>% .[Age==0, .(ex)] %>% pull(),
+lt_Ec_twoP %>% setDT() %>% .[Age==0, .(ex)] %>% pull(),
 lt_output_2022h[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' ) %>% pull(),
 lt_output[ age == 0 & sex=="f" ] %>% dcast( year ~ sex, value.var = 'ex' ) %>% pull(),
-lt_Ec_twoP %>% setDT() %>% .[Age==0, .(ex)] %>% pull(),
 lt_Ec_2022_WPP24[ AgeGrpStart == 0 & Sex=="Female" ] %>% dcast( Time ~ Sex, value.var = 'ex' ) %>% pull()
-),
-U5MR = c(1-lt_Ec_oneP[Age==5, .(lx)] %>% pull()/lt_Ec_oneP[Age==0, .(lx)] %>% pull(),
-         1-lt_output_2022h[age==5 & sex=="f", .(lx)] %>% pull()/lt_output_2022h[age==0 & sex=="f", .(lx)] %>% pull(),
-         1-lt_output[age==5 & sex=="f", .(lx)] %>% pull()/lt_output[age==0 & sex=="f", .(lx)] %>% pull(),
-         1-lt_Ec_twoP[Age==5, .(lx)] %>% pull()/lt_Ec_twoP[Age==0, .(lx)] %>% pull(),
-         1-lt_Ec_2022_WPP24[AgeGrpStart==5 & Sex=="Female", .(lx)] %>% 
-           pull()/lt_Ec_2022_WPP24[AgeGrpStart==0 & Sex=="Female", .(lx)] %>% 
-           pull()
-         )
+), 2),
+U5MRx1000 = round(c(1-lt_Ec_oneP[Age==5, .(lx)] %>% pull()/
+                      lt_Ec_oneP[Age==0, .(lx)] %>% pull(),
+         1-lt_Ec_twoP[Age==5, .(lx)] %>% pull()/
+           lt_Ec_twoP[Age==0, .(lx)] %>% pull(),
+         1-lt_output_2022h[age==5 & sex=="f", .(lx)] %>% pull()/
+           lt_output_2022h[age==0 & sex=="f", .(lx)] %>% pull(),
+         1-lt_output[age==5 & sex=="f", .(lx)] %>% pull()/
+           lt_output[age==0 & sex=="f", .(lx)] %>% pull(),
+         1-lt_Ec_2022_WPP24[AgeGrpStart==5 & Sex=="Female", .(lx)] %>% pull()/
+           lt_Ec_2022_WPP24[AgeGrpStart==0 & Sex=="Female", .(lx)] %>% pull()
+         )*1000, 2)
         )
+       )
+
+write.csv(resumen, file = "out/resumen.csv") # exportando a la carpeta "out"
+
+"--------------------------------------------------------------------------------"
+"--------------------------------------FIN---------------------------------------"
+"--------------------------------------------------------------------------------"

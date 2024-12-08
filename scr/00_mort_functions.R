@@ -641,7 +641,7 @@ lt_model_un_bestft<-function(type,
 u5mr_trussell_adj <- function (data, women = "women", child_born = "child_born", 
                                child_dead = "child_dead", agegrp = "agegrp", 
                                model = "west", svy_year = 1976.5, sex, 
-                               variant = "iussp"
+                               variant = "iussp", e_0=60
 ) 
 {
   agegrp <- data[[agegrp]]
@@ -668,7 +668,7 @@ u5mr_trussell_adj <- function (data, women = "women", child_born = "child_born",
     
     Ys <- DemoToolsData::modelLTx1 %>%
       setDT() %>%  
-      .[type_mlt == "CD East" & e0 == 70] %>% 
+      .[type_mlt == "CD East" & e0 == e_0] %>% 
       dcast(age ~ sex, value.var = "lx1", fun.aggregate = sum) %>% 
       .[ , lx := (1.05*male+female)/2.05] %>% 
       .[ , Ys := 0.5*log((100000-lx)/lx)] %>% 
