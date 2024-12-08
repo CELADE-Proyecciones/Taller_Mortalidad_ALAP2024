@@ -1,4 +1,7 @@
 # Introducción a la evaluación, ajuste y análisis de datos de mortalidad en el contexto latinoamericano
+
+<img src="img/logo_cepal.png" align="right" width="200" />
+
 Repositorio del "Taller de estimación de la mortalidad en América Latina fuentes de datos y métodos" de la Escuela de Salud y Mortalidad de ALAP 2024 
 
 ### Centro Latinoamericano y Caribeño de Demografía (CELADE) - División de Población de la CEPAL
