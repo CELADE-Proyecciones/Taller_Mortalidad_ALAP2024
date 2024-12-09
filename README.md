@@ -29,7 +29,7 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 # Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos
 
 Las diapositivas para la primera parte del taller están disponibles
-[aquí](slides/ALAP_AnálisisMortalidad_v0.pdf).
+[aquí](slides/ALAP24_ESM_EstMortalidadALC.pdf).
 
 
 # Segunda parte: Estimación de tablas de mortalidad con R a partir de varias fuentes
