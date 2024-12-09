@@ -26,6 +26,7 @@ library(DemoTools)
 library(ggplot2)
 library(MortalityLaws)
 library(dplyr)
+library(MortCast)
 
 options(scipen = 999)
 options(warn=-1)

@@ -63,6 +63,7 @@ library(u5mr)
 library(DemoTools)
 library(DemoToolsData)
 library(MortalityLaws)
+library(MortCast)
 library(ggplot2)
 library(dplyr)
 ```
