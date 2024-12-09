@@ -28,6 +28,9 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
  
 # Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos
 
+[Conozcámonos!!!](https://www.menti.com/al1u3a11hkut) 
+<img src="img/mentimeter_qr_codeALAP.png" align="right" width="200" />
+
 Las diapositivas para la primera parte del taller están disponibles
 [aquí](slides/ALAP24_ESM_EstMortalidadALC.pdf).
 
