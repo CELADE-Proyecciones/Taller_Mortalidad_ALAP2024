@@ -24,7 +24,7 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
   - [TM a través de las defunciones del hogar de censos](#TM-a-través-de-las-defunciones-del-hogar-de-censos)
   - [TM a partir de los registros vitales y censos](#TM-a-partir-de-los-registros-vitales-y-censos)
   - [TM a través de dos parámetros: mortalidad en la niñez y adulta (45q15)](#TM-a-través-de-dos-parámetros-mortalidad-en-la-niñez-y-adulta-45q15)
-  - [Análisis comparativo de los distintos métodos](#Análisis-comparativo-de-los-distintos métodos)
+  - [Análisis comparativo de los distintos métodos](#Análisis-comparativo-de-los-distintos-métodos)
  
 # Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos
 
