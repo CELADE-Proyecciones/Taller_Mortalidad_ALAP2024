@@ -11,6 +11,9 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 ### Facilitadora: Helena Cruz Castanheira
 [helena.cruz@cepal.org](mailto:helena.cruz@cepal.org)
 
+### Asistente: Andrés Peña Montalvo
+[agpena@colmex.mx](mailto:agpena@colmex.mx)
+
 ## Estructura de repositorio
 * `dat` : datos de entrada
 * `scr` : código para replicar el análisis y las visualizaciones
