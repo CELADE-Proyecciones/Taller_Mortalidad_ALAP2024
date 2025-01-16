@@ -28,7 +28,7 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
  
 # Primera parte: La estimación de la mortalidad en América Latina fuentes de datos y métodos
 
-[Conozcámonos!!!](https://www.menti.com/al1u3a11hkut) 
+[Conozcámonos!!!](slides/Participantes_Mortalidad_ALAP24.pdf) 
 <img src="img/mentimeter_qr_codeALAP.png" align="right" width="200" />
 
 Las diapositivas para la primera parte del taller están disponibles
@@ -41,6 +41,8 @@ A continuación se estiman las tablas de mortalidad de Ecuador para el 2022 a pa
 varias fuentes de información.  Una de las principales fuentes es el Censo
 Ecuador 2022 que tiene como fecha de referencia el `30-11-2022`.
 Para más detalles: https://www.censoecuador.gob.ec/
+
+> Nota: los valores calculados en el presente taller no necesariamente coinciden con las estimaciones oficiales del país.  Estos han sido construidos con fines meramente didácticos.
 
 Antes de arrancar el taller práctico se recomienda descargar el repositorio de `github`:
 
