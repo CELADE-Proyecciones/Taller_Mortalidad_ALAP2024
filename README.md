@@ -8,10 +8,14 @@ Repositorio del "Taller de estimación de la mortalidad en América Latina fuent
 ### Pre-evento del XI Congreso ALAP; Bogotá, Colombia
 ### 9 de diciembre de 2024 
 
-### Facilitadora: Helena Cruz Castanheira
+### Facilitadora:
+Helena Cruz Castanheira
+
 [helena.cruz@cepal.org](mailto:helena.cruz@cepal.org)
 
-### Asistente: Andrés Peña Montalvo
+### Asistente: 
+Andrés Peña Montalvo
+
 [agpena@colmex.mx](mailto:agpena@colmex.mx)
 
 ## Estructura de repositorio
